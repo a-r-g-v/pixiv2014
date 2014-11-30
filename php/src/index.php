@@ -195,7 +195,6 @@ function banned_ips() {
       array_push($ips, $row['ip']);
     }
   }
-
   return $ips;
 }
 
@@ -236,20 +235,20 @@ function locked_users() {
 // Page:Index
 function pages_index()
 {
-	if ($_SERVER['REQUEST_METHOD'] != "GET") return; 
-	unset($_SESSION['flash']);
 	$content = load_view("index.html.php");
 	print load_view("base.html.php",["content" => $content]);
+	unset($_SESSION['flash']);
 }
 
 // Page:Login
 function pages_login()
 {
-	if ($_SERVER['REQUEST_METHOD'] != "POST") return; 
+	
 	$result = attempt_login($_POST['login'],$_POST['password']);
 	if (!empty($result['user']))
 	{
 		session_regenerate_id(true);
+		$_SESSION['user_id'] = $result['user']['id'];
 		redirect_to("/mypage");
 	}
 	else
@@ -274,7 +273,6 @@ function pages_login()
 // Page:Mypage
 function pages_mypage()
 {
-	if ($_SERVER['REQUEST_METHOD'] != "GET") return; 
 	$user = current_user();
 	if (empty($user))
 	{
@@ -284,7 +282,7 @@ function pages_mypage()
 	else
 	{
 		$param = ['user' => $user, 'last_login' => last_login()];
-		$param['content'] = load_view("mypage.html.php");
+		$param['content'] = load_view("mypage.html.php",$param);
 		print load_view("base.html.php",$param);
 	}
 }
@@ -293,8 +291,8 @@ function pages_mypage()
 // Page:Report
 function pages_report()
 {
-	if ($_SERVER['REQUEST_METHOD'] != "GET") return; 
-	return json_encode([
+
+	print json_encode([
 	 'banned_ips' => banned_ips(),
 	'locked_users' => locked_users()
 	]);	
@@ -305,7 +303,10 @@ function pages_report()
 // Redirect
 function redirect_to($path)
 {
-	header("Location : http://54.64.142.159/$path");
+	header("location: $path?".session_name()."=".session_id(),TRUE,200);
+	//header('HTTP/1.1 200');
+	//header("location: $path");
+	exit(1);
 }
 
 
@@ -329,27 +330,37 @@ function flash_reg($type, $messsage)
 function route()
 {
 
+	session_name("isu4_qualifier_session");
 	session_start();
 	$path = explode("/", $_SERVER['REQUEST_URI']);
-	// index pages
-	if ($path[1] === "login")
+	$param = explode("?", $path[1]);
+	if (!empty($param[1]))
+	{
+		$sess = explode("=", $param[1]);
+	}
+	$method = $_SERVER['REQUEST_METHOD'];
+	if ($param[0] === "login" && $method === "POST")
 	{
 		pages_login();
 	}
-	elseif ($path[1] === "mypage")
+	elseif ($param[0] === "mypage" && $method === "GET")
 	{
 		pages_mypage();
 	}
-	elseif ($path[1] === "report")
+	elseif ($param[0] === "report" && $method === "GET")
 	{
 		pages_report();
 	}
-	else
+	elseif (($param[0] === "/" || empty($param[0])) && $method === "GET")
 	{
 		pages_index();
 	}	
+	else
+	{
+		header("HTTP/1.1 404 Not Found");
+		print("404 Not Found");
+	}
 }
 
 configure();
 route();
-?>
