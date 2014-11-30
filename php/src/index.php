@@ -1,6 +1,6 @@
 <?php
 ini_set('set_time_limit', 60*60*60);
-ini_set( 'display_errors', 1 );
+
 
 
 $db;
