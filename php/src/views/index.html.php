@@ -14,13 +14,11 @@
 </div>
 
 <?php
-/*
- $flash = flash_now();
  if (isset($flash['notice'])) {
+?>
   <div id="notice-message" class="alert alert-danger" role="alert"><?php echo $flash['notice'] ?></div>
 <?php
 }
-*/
 ?>
 
 <div class="container">
