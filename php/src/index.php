@@ -303,9 +303,8 @@ function pages_report()
 // Redirect
 function redirect_to($path)
 {
-	header("location: $path?".session_name()."=".session_id(),TRUE,200);
-	//header('HTTP/1.1 200');
-	//header("location: $path");
+	header('HTTP/1.1 200');
+	header("location: $path");
 	exit(1);
 }
 
