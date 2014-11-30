@@ -3,21 +3,19 @@ ini_set('set_time_limit', 60*60*60);
 ini_set( 'display_errors', 1 );
 
 
-$flash_content_array = [];
 $db;
 $config = [];
 
 // Core: Load View
 function load_view($file, $param = [])
 {	
-	global $flash_content_array;
 	if (!empty($param))
 	{
 		extract($param);
 	}	
-	if (!empty($flash_content_array))
+	if (!empty($_SESSION['flash']))
 	{
-		$flash =  $flash_content_array;
+		$flash =  $_SESSION['flash'];
 	}
 	ob_start();
 	include ("./views/" . $file);
@@ -238,6 +236,8 @@ function locked_users() {
 // Page:Index
 function pages_index()
 {
+	if ($_SERVER['REQUEST_METHOD'] != "GET") return; 
+	unset($_SESSION['flash']);
 	$content = load_view("index.html.php");
 	print load_view("base.html.php",["content" => $content]);
 }
@@ -245,11 +245,12 @@ function pages_index()
 // Page:Login
 function pages_login()
 {
+	if ($_SERVER['REQUEST_METHOD'] != "POST") return; 
 	$result = attempt_login($_POST['login'],$_POST['password']);
 	if (!empty($result['user']))
 	{
 		session_regenerate_id(true);
-		pages_mypage();
+		redirect_to("/mypage");
 	}
 	else
 	{
@@ -265,18 +266,20 @@ function pages_login()
 				flash_reg('notice', "Wrong username or password");
 				break;
 		}		
-		pages_index();
+
+		redirect_to("/");
 	}
 }
 
 // Page:Mypage
 function pages_mypage()
 {
+	if ($_SERVER['REQUEST_METHOD'] != "GET") return; 
 	$user = current_user();
 	if (empty($user))
 	{
 		flash_reg('notice', 'You must be logged in');
-		pages_index();
+		redirect_to("/");
 	}
 	else
 	{
@@ -290,6 +293,7 @@ function pages_mypage()
 // Page:Report
 function pages_report()
 {
+	if ($_SERVER['REQUEST_METHOD'] != "GET") return; 
 	return json_encode([
 	 'banned_ips' => banned_ips(),
 	'locked_users' => locked_users()
@@ -298,15 +302,24 @@ function pages_report()
 
 
 
-
+// Redirect
+function redirect_to($path)
+{
+	header("Location : http://54.64.142.159/$path");
+}
 
 
 // Flash
 
 function flash_reg($type, $messsage)
 {
-	global $flash_content_array;
+	$flash_content_array = [];
+	if (!empty($_SESSION['flash']))
+	{
+	$flash_content_array = $_SESSION['flash'];
+	}
 	$flash_content_array[$type] = $messsage;
+	$_SESSION['flash'] = $flash_content_array;
 }
 
 
@@ -316,6 +329,7 @@ function flash_reg($type, $messsage)
 function route()
 {
 
+	session_start();
 	$path = explode("/", $_SERVER['REQUEST_URI']);
 	// index pages
 	if ($path[1] === "login")
